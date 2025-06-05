@@ -1,0 +1,160 @@
+<html>
+<head>
+<title>Ferramenta Web Completa</title>
+<meta charset="utf-8">
+<hta:application 
+    applicationname="FerramentaWebCompleta"
+    border="thin"
+    scroll="yes"
+    singleinstance="yes"
+    sysmenu="yes"
+/>
+<style>
+    body { font-family: Arial; margin: 20px; }
+    /* Removido display:none do principal para mostrar sempre */
+    #databaseTable { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    #databaseTable th, #databaseTable td { border: 1px solid #999; padding: 5px; text-align: left; }
+</style>
+
+<script language="VBScript">
+Dim fso, caminhoArquivo
+
+' Caminho do arquivo para salvar a postagem
+caminhoArquivo = CreateObject("Scripting.FileSystemObject").GetAbsolutePathName(".") & "\postagem.txt"
+Set fso = CreateObject("Scripting.FileSystemObject")
+
+Sub Window_OnLoad()
+    ' Carrega o texto salvo no arquivo, se existir
+    If fso.FileExists(caminhoArquivo) Then
+        Dim arquivo, texto
+        Set arquivo = fso.OpenTextFile(caminhoArquivo, 1) ' 1 = ForReading
+        texto = arquivo.ReadAll
+        arquivo.Close
+        Document.getElementById("postagemCompleta").value = texto
+    End If
+End Sub
+
+Sub Pesquisar()
+    Dim termo, url, tipo, shell
+    termo = Document.getElementById("entrada").value
+    tipo = Document.getElementById("tipo").value
+
+    If termo = "" Then
+        MsgBox "Digite algo para pesquisar."
+        Exit Sub
+    End If
+
+    url = "https://www.google.com/search?q="
+
+    Select Case tipo
+        Case "todos": url = url & Replace(termo, " ", "+")
+        Case "video": url = url & Replace(termo, " ", "+") & "+filetype:mp4+OR+filetype:avi+OR+filetype:mkv"
+        Case "imagem": url = url & Replace(termo, " ", "+") & "+filetype:jpg+OR+filetype:png+OR+filetype:webp"
+        Case "pdf": url = url & Replace(termo, " ", "+") & "+filetype:pdf"
+        Case "mp3": url = url & Replace(termo, " ", "+") & "+filetype:mp3"
+        Case "login": url = url & Replace(termo, " ", "+") & "+inurl:login+OR+inurl:signin+filetype:php+OR+filetype:asp"
+        Case "basedados": url = url & Replace(termo, " ", "+") & "+intitle:database+OR+section+filetype:sql+OR+filetype:json"
+    End Select
+
+    Set shell = CreateObject("WScript.Shell")
+    shell.Run """" & url & """", 1, False
+End Sub
+
+Sub ReproduzirYouTube()
+    Dim url, videoID, finalURL
+    url = Document.getElementById("ytinput").value
+
+    If url = "" Then
+        MsgBox "Cole uma URL do YouTube."
+        Exit Sub
+    End If
+
+    If InStr(url, "youtube.com/watch?v=") > 0 Then
+        videoID = Split(url, "v=")(1)
+        videoID = Split(videoID, "&")(0)
+    ElseIf InStr(url, "youtu.be/") > 0 Then
+        videoID = Split(url, "youtu.be/")(1)
+    Else
+        MsgBox "URL inválida. Use links do YouTube."
+        Exit Sub
+    End If
+
+    finalURL = "https://www.youtube.com/embed/" & videoID
+    Document.getElementById("ytframe").src = finalURL
+End Sub
+
+Sub PostarUnificado()
+    Dim conteudo, url, shell
+
+    conteudo = Document.getElementById("postagemCompleta").value
+    conteudo = Replace(conteudo, vbCrLf, "%0A") ' quebras de linha para URL
+
+    url = "https://espiritosealmas.blogspot.com/p/espiritos-e-almas.html?postagem=" & EscapeURL(conteudo)
+
+    Set shell = CreateObject("WScript.Shell")
+    shell.Run """" & url & """", 1, False
+End Sub
+
+Function EscapeURL(str)
+    Dim sc
+    On Error Resume Next
+    Set sc = CreateObject("ScriptControl")
+    sc.Language = "JScript"
+    EscapeURL = sc.Eval("encodeURIComponent('" & Replace(str, "'", "\'") & "')")
+    If Err.Number <> 0 Then EscapeURL = str
+End Function
+</script>
+
+</head>
+<body onload="Window_OnLoad()">
+
+<!-- Principal (login removido) -->
+<div id="principal">
+    <h2>🔍 Pesquisa Inteligente de Arquivos</h2>
+    <input type="text" id="entrada" size="50" placeholder="Digite o nome do arquivo">
+    <select id="tipo">
+        <option value="todos">🔎 Todos</option>
+        <option value="video">🎥 Vídeo</option>
+        <option value="imagem">🖼️ Imagem</option>
+        <option value="pdf">📄 PDF</option>
+        <option value="mp3">🎵 MP3</option>
+        <option value="login">🔐 Login</option>
+        <option value="basedados">🗄️ Banco de Dados</option>
+    </select>
+    <button onclick="Pesquisar()">Pesquisar</button>
+
+    <hr>
+
+    <h2>▶️ Reprodutor de Vídeo do YouTube</h2>
+    <input type="text" id="ytinput" size="60" placeholder="Cole o link do YouTube aqui">
+    <button onclick="ReproduzirYouTube()">Reproduzir</button><br><br>
+    <iframe id="ytframe" width="560" height="315" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+
+    <hr>
+
+    <h2>📁 Base de Dados (Exemplo)</h2>
+    <table id="databaseTable">
+        <tr><th>ID</th><th>Nome</th><th>Tipo</th></tr>
+        <tr><td>1</td><td>Apostila Matemática</td><td>PDF</td></tr>
+        <tr><td>2</td><td>Música Clássica</td><td>MP3</td></tr>
+        <tr><td>3</td><td>Documentário História</td><td>MP4</td></tr>
+        <tr><td>4</td><td><a href="https://sites.google.com/view/poesianahora/home" target="_blank">POESIA NA HORA</a></td><td>Site</td></tr>
+        <tr><td>5</td><td><a href="https://pesquisaweb2050.blogspot.com/2025/05/ferramenta-hacker-total-pesquisa.html" target="_blank">pesquisaweb2050</a></td><td>Blog</td></tr>
+    </table>
+
+    <br>
+    <h3 style="color:red;">Seja feliz por favor.</h3>
+    <img src="https://1.bp.blogspot.com/-efS_ldObNq0/V_4ogmdqYHI/AAAAAAAAU9I/moYu2rp5bZ02gqL9kMSa9lj9emftc891wCLcB/s400/69285996.gif" width="400px">
+
+    <hr>
+
+    <h2>📝 Postar no blog pesquisaweb2050</h2>
+    <label>Postagem completa (título + conteúdo):</label><br>
+    <textarea id="postagemCompleta" rows="10" cols="80" placeholder="Digite o título e o conteúdo aqui, tudo junto."></textarea><br><br>
+    <button onclick="PostarUnificado()">📤 Postar no Blog</button>
+</div>
+
+</body>
+</html>
+
+
