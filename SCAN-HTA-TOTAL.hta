@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Web Crawler HTA</title>
+    <hta:application
+        id="crawlerApp"
+        applicationname="HTA Web Crawler"
+        border="thin"
+        caption="yes"
+        showintaskbar="yes"
+        singleinstance="yes"
+        windowstate="normal"
+    />
+    <script language="javascript">
+        function startCrawl() {
+            var fso = new ActiveXObject("Scripting.FileSystemObject");
+            var shell = new ActiveXObject("WScript.Shell");
+            var http = new ActiveXObject("MSXML2.XMLHTTP");
+
+            var link = document.getElementById("linkPai").value;
+            var visited = {};
+            var results = [];
+
+            function crawl(url, depth) {
+                if (visited[url] || depth > 3) return;
+                visited[url] = true;
+
+                try {
+                    http.open("GET", url, false);
+                    http.send();
+                    if (http.status == 200) {
+                        results.push("URL: " + url + " - OK");
+
+                        var body = http.responseText;
+                        var matches = body.match(/href=["']([^"']+)["']/gi);
+                        if (matches) {
+                            for (var i = 0; i < matches.length; i++) {
+                                var href = matches[i].match(/href=["']([^"']+)["']/i)[1];
+                                if (href.indexOf("http") !== 0) {
+                                    // transformar links relativos em absolutos
+                                    if (href.indexOf("/") === 0) {
+                                        var base = new ActiveXObject("WScript.Shell").ExpandEnvironmentStrings("%CD%");
+                                        href = link + href;
+                                    } else {
+                                        continue; // ignorar outros tipos
+                                    }
+                                }
+                                crawl(href, depth + 1);
+                            }
+                        }
+                    } else {
+                        results.push("URL: " + url + " - ERRO: " + http.status);
+                    }
+                } catch (e) {
+                    results.push("URL: " + url + " - EXCEÇÃO: " + e.message);
+                }
+            }
+
+            crawl(link, 0);
+
+            // salvar resultado em TXT
+            var file = fso.CreateTextFile("scan_result.txt", true);
+            for (var i = 0; i < results.length; i++) {
+                file.WriteLine(results[i]);
+            }
+            file.Close();
+
+            alert("Scan finalizado! Relatório salvo em 'scan_result.txt'");
+        }
+    </script>
+</head>
+<body>
+    <h3>HTA Web Crawler</h3>
+    <label>Digite o link pai (ex: https://exemplo.com):</label><br>
+    <input type="text" id="linkPai" size="80"/><br><br>
+    <button onclick="startCrawl()">Iniciar Scan</button>
+</body>
+</html>
