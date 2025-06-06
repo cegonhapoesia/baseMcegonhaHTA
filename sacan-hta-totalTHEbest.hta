@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Scanner Web HTA</title>
+  <hta:application
+    id="htaApp"
+    applicationname="HTA Scanner"
+    border="thin"
+    caption="yes"
+    showintaskbar="yes"
+    singleinstance="yes"
+    windowstate="normal"
+  />
+  <script language="javascript">
+    function startScan() {
+      var fso = new ActiveXObject("Scripting.FileSystemObject");
+      var http = new ActiveXObject("MSXML2.XMLHTTP");
+      var visited = {};
+      var results = [];
+      var link = document.getElementById("urlBase").value;
+      var depthLimit = 2;
+
+      function crawl(url, depth) {
+        if (visited[url] || depth > depthLimit) return;
+        visited[url] = true;
+
+        try {
+          http.open("GET", url, false);
+          http.setRequestHeader("User-Agent", "HTA-Scanner");
+          http.send();
+
+          results.push("[" + http.status + "] " + url);
+
+          if (http.status == 200) {
+            var body = http.responseText;
+            var matches = body.match(/href=["']([^"']+)["']/gi);
+
+            if (matches) {
+              for (var i = 0; i < matches.length; i++) {
+                var href = matches[i].match(/href=["']([^"']+)["']/i)[1];
+
+                // normalizar link
+                if (href.indexOf("http") !== 0) {
+                  if (href.indexOf("/") === 0) {
+                    href = url.split("/")[0] + "//" + url.split("/")[2] + href;
+                  } else {
+                    continue;
+                  }
+                }
+
+                // crawl recursivo
+                crawl(href, depth + 1);
+              }
+            }
+          }
+        } catch (e) {
+          results.push("[ERRO] " + url + " - " + e.message);
+        }
+      }
+
+      crawl(link, 0);
+
+      // salvar relatório na pasta atual
+      var file = fso.CreateTextFile("relatorio_hta_scan.txt", true);
+      for (var i = 0; i < results.length; i++) {
+        file.WriteLine(results[i]);
+      }
+      file.Close();
+
+      alert("Scan finalizado. Relatório salvo como 'relatorio_hta_scan.txt'");
+    }
+  </script>
+</head>
+<body>
+  <h2>HTA Web Scanner</h2>
+  <label>Digite a URL base:</label><br>
+  <input type="text" id="urlBase" size="70" value="https://exemplo.com" /><br><br>
+  <input type="button" value="Iniciar Scan" onclick="startScan()" />
+</body>
+</html>
