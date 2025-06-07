@@ -1,0 +1,94 @@
+<html>
+<head>
+<meta charset="utf-8">
+
+
+    <title>Relatório do Sistema</title>
+    <hta:application
+        id="oHTA"
+        applicationname="Relatório do Sistema"
+        border="dialog"
+        maximizebutton="no"
+        minimizebutton="yes"
+        sysmenu="yes"
+        singleinstance="yes"
+        showintaskbar="yes"
+    >
+    <script language="vbscript">
+        Sub Window_OnLoad
+            Dim objFSO, objShell
+            Set objFSO = CreateObject("Scripting.FileSystemObject")
+            Set objShell = CreateObject("WScript.Shell")
+            
+            ' Informações do sistema
+            Dim strHTML
+            strHTML = "<h1>Relatório do Sistema</h1>"
+            strHTML = strHTML & "<p>Gerado em " & Now & "</p>"
+            strHTML = strHTML & "<h2>Informações do Sistema</h2>"
+            strHTML = strHTML & "<table border='1'>"
+            strHTML = strHTML & "<tr><th>Sistema Operacional</th><td>" & objShell.RegRead("HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProductName") & "</td></tr>"
+            strHTML = strHTML & "<tr><th>Usuário Logado</th><td>" & objShell.ExpandEnvironmentStrings("%USERNAME%") & "</td></tr>"
+            strHTML = strHTML & "<tr><th>Nome do Computador</th><td>" & objShell.ExpandEnvironmentStrings("%COMPUTERNAME%") & "</td></tr>"
+            strHTML = strHTML & "</table>"
+            
+            ' Listar pastas
+            strHTML = strHTML & ListarPasta(objShell.ExpandEnvironmentStrings("%USERPROFILE%") & "\Documents", "Documentos")
+            strHTML = strHTML & ListarPasta(objShell.ExpandEnvironmentStrings("%USERPROFILE%") & "\Pictures", "Imagens")
+            strHTML = strHTML & ListarPasta(objShell.ExpandEnvironmentStrings("%USERPROFILE%") & "\Music", "Música")
+            strHTML = strHTML & ListarPasta(objShell.ExpandEnvironmentStrings("%USERPROFILE%") & "\Videos", "Vídeos")
+            strHTML = strHTML & ListarPasta(objShell.ExpandEnvironmentStrings("%USERPROFILE%") & "\Downloads", "Transferências")
+            strHTML = strHTML & ListarPasta(objShell.ExpandEnvironmentStrings("%USERPROFILE%") & "\Desktop", "Área de Trabalho")
+            
+            strHTML = strHTML & "<button onclick='AbrirNoNavegador()'>Abrir no Navegador</button>"
+            strHTML = strHTML & "<button onclick='window.close()'>Fechar</button>"
+            
+            Document.Body.InnerHTML = strHTML
+        End Sub
+        
+        Function ListarPasta(strPath, strTitle)
+            Dim objFSO, objFolder, objFile, strHTML
+            Set objFSO = CreateObject("Scripting.FileSystemObject")
+            
+            If objFSO.FolderExists(strPath) Then
+                Set objFolder = objFSO.GetFolder(strPath)
+                strHTML = "<h2>" & strTitle & "</h2>"
+                strHTML = strHTML & "<table border='1'>"
+                strHTML = strHTML & "<tr><th>Nome</th><th>Tipo</th><th>Tamanho</th><th>Última Modificação</th></tr>"
+                
+                For Each objFile In objFolder.Files
+                    strHTML = strHTML & "<tr>"
+                    strHTML = strHTML & "<td><a href='file:///" & Replace(objFile.Path, "\", "/") & "'>" & objFile.Name & "</a></td>"
+                    strHTML = strHTML & "<td>Arquivo</td>"
+                    strHTML = strHTML & "<td>" & FormatNumber(objFile.Size / 1024, 2) & " KB</td>"
+                    strHTML = strHTML & "<td>" & objFile.DateLastModified & "</td>"
+                    strHTML = strHTML & "</tr>"
+                Next
+                
+                For Each objSubFolder In objFolder.SubFolders
+                    strHTML = strHTML & "<tr>"
+                    strHTML = strHTML & "<td><a href='file:///" & Replace(objSubFolder.Path, "\", "/") & "'>" & objSubFolder.Name & "</a></td>"
+                    strHTML = strHTML & "<td>Pasta</td>"
+                    strHTML = strHTML & "<td>-</td>"
+                    strHTML = strHTML & "<td>" & objSubFolder.DateLastModified & "</td>"
+                    strHTML = strHTML & "</tr>"
+                Next
+                
+                strHTML = strHTML & "</table>"
+            Else
+                strHTML = "<p>Pasta não encontrada ou inacessível: " & strPath & "</p>"
+            End If
+            
+            ListarPasta = strHTML
+        End Function
+        
+        Sub AbrirNoNavegador()
+            Dim objShell
+            Set objShell = CreateObject("WScript.Shell")
+            objShell.Run """C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"" ""about:blank""", 1, False
+            window.close()
+        End Sub
+    </script>
+</head>
+<body>
+</body>
+</html>
